@@ -112,6 +112,9 @@ dev = [
     "python-socketio>=5.16.0,<6.0.0",
     "msgpack>=1.1.0,<2.0.0",
 ]
+ext = [
+    "nanobot-ext",
+]
 
 [project.scripts]
 nanobot = "nanobot.cli.entry:main"
@@ -128,6 +131,9 @@ build-backend = "hatchling.build"
 
 [tool.hatch.metadata]
 allow-direct-references = true
+
+[tool.uv.sources]
+nanobot-ext = { path = "extensions/nanobot_ext", editable = true }
 
 [tool.hatch.build.hooks.custom]
 # Implementation lives in the conventional `hatch_build.py` at the repo root.

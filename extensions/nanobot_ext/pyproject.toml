@@ -1,0 +1,17 @@
+[project]
+name = "nanobot-ext"
+version = "0.1.0"
+description = "Fork-owned extensions for nanobot"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.entry-points."nanobot.tools"]
+extension_echo = "nanobot_ext.tools.echo:EchoTool"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/nanobot_ext"]
