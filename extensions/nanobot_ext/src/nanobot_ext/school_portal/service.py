@@ -142,7 +142,10 @@ class SchoolPortalService:
         if credentials is None:
             return {
                 "ok": False,
-                "error": "未配置学校门户凭证，请在凭据文件中填写或设置环境变量",
+                "error": (
+                    f"未配置学校门户凭证，请填写 {self.store.credentials_path} "
+                    "或设置环境变量"
+                ),
             }
         username = _normalize(credentials.username)
         password = _normalize(credentials.password)

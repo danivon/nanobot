@@ -13,7 +13,7 @@ This fork adds capabilities without changing the agent execution core. Read this
 
 - Python tool: create a separate package under `extensions/`, register it through `[project.entry-points."nanobot.tools"]`, and install it editable in the active environment.
 - Personal skill: place it under `~/.nanobot/workspace/skills/<name>/SKILL.md`; it needs no packaging or gateway restart.
-- Distributable skill or MCP bundle: package it as an Agent Plugin under `<workspace>/plugins/` and enable it from Apps.
+- Distributable skill or MCP bundle: keep its source under `extensions/agent-plugins/<name>/`, install it under `<workspace>/plugins/`, and enable it from Apps.
 - New channel: place it under `nanobot/channels/<name>/` following `channel-package-guide.md`; treat it as an upstream-file change and keep it in a dedicated commit.
 - Keep one active copy of each skill. Workspace skills override plugin skills, which override built-in skills.
 

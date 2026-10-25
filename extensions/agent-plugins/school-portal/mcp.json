@@ -1,0 +1,12 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
+  "mcpServers": {
+    "school-portal": {
+      "type": "stdio",
+      "command": "nanobot-school-portal-mcp",
+      "env": {
+        "NANOBOT_SCHOOL_PORTAL_STATE_DIR": "${PLUGIN_DATA}"
+      }
+    }
+  }
+}

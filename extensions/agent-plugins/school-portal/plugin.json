@@ -1,0 +1,16 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "school-portal",
+  "description": "SCAU information portal CAS login and session status.",
+  "repository": "https://github.com/danivon/nanobot",
+  "extensions": {
+    "dev.nanobot": {
+      "displayName": "SCAU School Portal",
+      "category": "Education",
+      "permissions": [
+        "network",
+        "browser"
+      ]
+    }
+  }
+}

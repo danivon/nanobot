@@ -19,41 +19,21 @@ uv run --no-sync pytest extensions/nanobot_ext/tests -q
 
 Add a tool by creating a module under `src/nanobot_ext/tools/` and registering its class in `pyproject.toml` under `[project.entry-points."nanobot.tools"]`. Restart the gateway after changing Python tool code.
 
-## School Portal MCP
+## School Portal Agent Plugin
 
-The school portal integration is an independent stdio MCP server. It provides `portal_status` and `portal_login`; the login tool reads credentials from a local file or environment variables and never accepts a password as a tool argument.
+The school portal integration is an independent stdio MCP server packaged with its Skill as an Agent Plugin. It provides `portal_status` and `portal_login`; the login tool reads credentials from `PLUGIN_DATA/credentials.json` or environment variables and never accepts a password as a tool argument.
 
-Create the runtime state directory and credentials file:
-
-```bash
-mkdir -p ~/.nanobot/extensions/school-portal
-chmod 700 ~/.nanobot/extensions/school-portal
-cp extensions/nanobot_ext/examples/credentials.example.json \
-  ~/.nanobot/extensions/school-portal/credentials.json
-chmod 600 ~/.nanobot/extensions/school-portal/credentials.json
-```
-
-Edit the copied credentials file with the real account. Alternatively, set `NANOBOT_SCHOOL_PORTAL_USERNAME` and `NANOBOT_SCHOOL_PORTAL_PASSWORD` in the gateway environment. The server stores the resulting browser session at `~/.nanobot/extensions/school-portal/session.json` with permissions `600`.
-
-Register the server in `~/.nanobot/config.json`:
-
-```json
-{
-  "tools": {
-    "mcpServers": {
-      "school-portal": {
-        "command": "/Users/dcj/ai/nanobot/.venv/bin/nanobot-school-portal-mcp",
-        "tool_timeout": 120
-      }
-    }
-  }
-}
-```
-
-The skill source is at `skills/school-portal/SKILL.md`. For local development, link it into the workspace:
+The installable plugin source is at `extensions/agent-plugins/school-portal`. Install the Python package first so `nanobot-school-portal-mcp` is on `PATH`, then copy the plugin directory:
 
 ```bash
-mkdir -p ~/.nanobot/workspace/skills
-ln -sfn /Users/dcj/ai/nanobot/extensions/nanobot_ext/skills/school-portal \
-  ~/.nanobot/workspace/skills/school-portal
+uv sync --all-extras --dev
+mkdir -p ~/.nanobot/workspace/plugins
+cp -R extensions/agent-plugins/school-portal \
+  ~/.nanobot/workspace/plugins/school-portal
 ```
+
+Open WebUI **Apps**, review the plugin, and enable it. Creating the directory alone does not activate it.
+
+After activation, the MCP server runs with `PLUGIN_DATA` as its state directory. Put `credentials.json` there with permissions `600`; `session.json` is written there with permissions `600`. Do not put credentials or runtime data inside the installed plugin directory. The plugin package is immutable after activation, and changing packaged files disables it until it is reviewed again.
+
+The plugin's `mcp.json` declares the server; no manual `tools.mcpServers` entry is needed. The Skill is bundled in `skills/school-portal/SKILL.md` and is loaded after the plugin is enabled.

@@ -139,7 +139,7 @@ async def cas_login(
     password: str,
     *,
     diagnostic_path: Path | None = None,
-    timeout_s: float = 35.0,
+    timeout_s: float = 25.0,
 ) -> dict[str, Any]:
     """Fill the official login form and return the harvested browser session."""
     chrome = _chrome_binary()
@@ -183,7 +183,8 @@ async def cas_login(
                 await _cdp(ws, message_id, "Page.navigate", {"url": cas_url})
                 message_id += 1
 
-                for _ in range(30):
+                deadline = time.monotonic() + timeout_s
+                while time.monotonic() < deadline:
                     if await _eval(ws, message_id, _POLL_FORM_JS):
                         break
                     await asyncio.sleep(0.5)
@@ -202,7 +203,6 @@ async def cas_login(
                 if clicked != "CLICKED":
                     raise CasDriverError(f"click_failed:{clicked}")
 
-                deadline = time.monotonic() + timeout_s
                 while time.monotonic() < deadline:
                     url = str(await _eval(ws, message_id, "window.location.href") or "")
                     if "portal.scau.edu.cn" in url and "cas.scau.edu.cn" not in url:

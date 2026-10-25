@@ -14,13 +14,15 @@
 
 ```text
 nanobot agent
-  -> MCP stdio server: nanobot-school-portal-mcp
-      -> SchoolPortalService
-          -> cas_driver: 临时 headless Chrome + CDP
-              -> 官方 CAS 登录页
-              -> CASTGC / customsid / Authorization Cookie
-          -> PortalSessionStore
-              -> ~/.nanobot/extensions/school-portal/session.json
+  -> enabled Agent Plugin: school-portal
+      -> bundled Skill: skills/school-portal/SKILL.md
+      -> MCP stdio server: nanobot-school-portal-mcp
+          -> SchoolPortalService
+              -> cas_driver: 临时 headless Chrome + CDP
+                  -> 官方 CAS 登录页
+                  -> CASTGC / customsid / Authorization Cookie
+              -> PortalSessionStore
+                  -> PLUGIN_DATA/session.json
 ```
 
 浏览器只负责认证，后续业务读取应复用保存的 HTTP 会话，不需要为每个请求启动浏览器。
@@ -29,11 +31,14 @@ nanobot agent
 
 | 内容 | 路径 |
 |---|---|
+| Agent Plugin 包 | [`extensions/agent-plugins/school-portal`](../agent-plugins/school-portal) |
+| Plugin manifest | [`plugin.json`](../agent-plugins/school-portal/plugin.json) |
+| Plugin MCP 声明 | [`mcp.json`](../agent-plugins/school-portal/mcp.json) |
 | MCP 入口 | [`server.py`](../nanobot_ext/src/nanobot_ext/school_portal/server.py) |
 | 登录驱动 | [`cas_driver.py`](../nanobot_ext/src/nanobot_ext/school_portal/cas_driver.py) |
 | 凭证、会话和登录编排 | [`service.py`](../nanobot_ext/src/nanobot_ext/school_portal/service.py) |
-| Skill | [`SKILL.md`](../nanobot_ext/skills/school-portal/SKILL.md) |
-| 示例凭证 | [`credentials.example.json`](../nanobot_ext/examples/credentials.example.json) |
+| Skill | [`SKILL.md`](../agent-plugins/school-portal/skills/school-portal/SKILL.md) |
+| 示例凭证 | [`credentials.example.json`](../agent-plugins/school-portal/examples/credentials.example.json) |
 | 测试 | [`test_school_portal.py`](../nanobot_ext/tests/test_school_portal.py) |
 
 ## 登录流程
@@ -48,10 +53,18 @@ nanobot agent
 
 ## 凭证配置
 
-默认凭证文件：
+启用 Agent Plugin 后，MCP server 会获得独立的 `PLUGIN_DATA` 目录。默认凭证文件位于：
 
 ```text
-~/.nanobot/extensions/school-portal/credentials.json
+PLUGIN_DATA/credentials.json
+```
+
+如果缺失，`portal_status` 的错误信息会给出当前实例的准确路径。可以从插件的示例文件复制：
+
+```bash
+mkdir -p "$PLUGIN_DATA"
+cp extensions/agent-plugins/school-portal/examples/credentials.example.json \
+  "$PLUGIN_DATA/credentials.json"
 ```
 
 文件格式：
@@ -66,8 +79,8 @@ nanobot agent
 建议权限：
 
 ```bash
-chmod 700 ~/.nanobot/extensions/school-portal
-chmod 600 ~/.nanobot/extensions/school-portal/credentials.json
+chmod 700 "$PLUGIN_DATA"
+chmod 600 "$PLUGIN_DATA/credentials.json"
 ```
 
 也可以用环境变量代替文件：
@@ -81,39 +94,43 @@ NANOBOT_SCHOOL_PORTAL_PASSWORD
 
 ## 会话存储
 
-默认会话文件：
+启用插件后，会话文件位于：
 
 ```text
-~/.nanobot/extensions/school-portal/session.json
+PLUGIN_DATA/session.json
 ```
 
 文件权限应为 `600`。内容包含用户名、登录时间、学校域名 Cookie 和 localStorage；不包含密码。会话文件属于敏感数据，不能提交到 Git，也不要通过聊天工具发送。
 
 当前 `portal_status` 只检查本地会话文件是否存在，不代表服务端会话一定仍有效。后续应增加只读 HTTP 校验接口。
 
-## MCP 配置
+## Agent Plugin 安装
 
-在 `~/.nanobot/config.json` 的 `tools.mcpServers` 中加入：
+先安装 Python 扩展，使 `nanobot-school-portal-mcp` 命令可用：
 
-```json
-{
-  "school-portal": {
-    "command": "/Users/dcj/ai/nanobot/.venv/bin/nanobot-school-portal-mcp",
-    "toolTimeout": 120,
-    "enabledTools": [
-      "portal_status",
-      "portal_login"
-    ]
-  }
-}
+```bash
+uv sync --all-extras --dev
+uv run --no-sync python -m scripts.install_channel_dependencies --all-channels
 ```
 
-修改配置后重启网关：
+把插件目录复制到 workspace：
+
+```bash
+mkdir -p ~/.nanobot/workspace/plugins
+cp -R extensions/agent-plugins/school-portal \
+  ~/.nanobot/workspace/plugins/school-portal
+```
+
+打开 WebUI 的 **Apps** 页面，审核并启用 `school-portal`。只复制目录不会激活插件。
+
+插件启用后重启网关：
 
 ```bash
 cd /Users/dcj/ai/nanobot
 uv run --no-sync nanobot gateway restart
 ```
+
+插件的 `mcp.json` 会自动声明 MCP server，`skills/school-portal/SKILL.md` 会随插件加载，不需要手动编辑 `tools.mcpServers` 或创建 workspace Skill 链接。
 
 在 nanobot 中，MCP 工具通常显示为：
 
@@ -124,17 +141,10 @@ mcp_school-portal_portal_login
 
 ## Skill
 
-Skill 源码位于：
+Skill 随 Agent Plugin 打包，源码位于：
 
 ```text
-extensions/nanobot_ext/skills/school-portal/SKILL.md
-```
-
-本地开发时链接到 workspace：
-
-```bash
-ln -sfn /Users/dcj/ai/nanobot/extensions/nanobot_ext/skills/school-portal \
-  ~/.nanobot/workspace/skills/school-portal
+extensions/agent-plugins/school-portal/skills/school-portal/SKILL.md
 ```
 
 Skill 的规则包括：先查询状态、只在未登录时登录、不要把密码粘贴到聊天、不要输出 Cookie/JWT、遇到验证码或二次验证时停止自动流程。
@@ -187,7 +197,7 @@ service=<目标系统 service URL>
 |---|---|
 | `未配置学校门户凭证` | 填写 `credentials.json` 或设置两个环境变量 |
 | `chrome_not_found` | 确认 Chrome 已安装，或设置 `NANOBOT_SCHOOL_PORTAL_CHROME` |
-| `form_not_found` | 检查登录页是否改版，查看 `/Users/dcj/.nanobot/extensions/school-portal/last-login-timeout.png` |
+| `form_not_found` | 检查登录页是否改版，查看 `PLUGIN_DATA/last-login-timeout.png` |
 | `CAPTCHA_REQUIRED` / 滑块 | 先到官网正常登录一次解除风控，不要反复自动重试 |
 | `PASSERROR` | 检查密码；连续失败可能触发账号风控 |
 | `TWOVERIFY` | 当前范围不支持二次验证 |
