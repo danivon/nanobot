@@ -4,10 +4,17 @@ version = "0.1.0"
 description = "Fork-owned extensions for nanobot"
 readme = "README.md"
 requires-python = ">=3.11"
-dependencies = []
+dependencies = [
+    "httpx>=0.28.0,<1.0.0",
+    "mcp>=1.26.0,<2.0.0",
+    "websockets>=15.0,<17.0",
+]
 
 [project.entry-points."nanobot.tools"]
 extension_echo = "nanobot_ext.tools.echo:EchoTool"
+
+[project.scripts]
+nanobot-school-portal-mcp = "nanobot_ext.school_portal.server:main"
 
 [build-system]
 requires = ["hatchling"]
